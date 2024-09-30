@@ -1,0 +1,18 @@
+{
+    "title": "Background Images",
+    "background_images": [
+      {
+        "description": "Heritage Day Website Banner",
+        "url": "https://cdn.foodloversmarket.co.za/wp-content/uploads/20240905073549/FLM_Heritage-Day_Website-Banner-1200x6272-1-1.jpg",
+        "resolution": "1200x6272",
+        "format": "jpg"
+      },
+      {
+        "description": "Food Lover's Market Background Image",
+        "url": "https://cdn.foodloversmarket.co.za/wp-content/uploads/20240925145734/Background-1-720x250-01-scaled.avif",
+        "resolution": "720x250",
+        "format": "avif"
+      }
+    ]
+  }
+  
