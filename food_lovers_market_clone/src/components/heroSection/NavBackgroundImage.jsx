@@ -7,7 +7,7 @@ const NavBackgroundImage = () => {
   const images = backgroundData.background_images;
 
   return (
-    <section className='relative'>
+    <section className=''>
       <Slide arrows={false} indicators>
         {images.map((imageData, index) => (
           <div

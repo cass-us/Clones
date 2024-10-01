@@ -1,0 +1,23 @@
+{
+    "menu": {
+      "picture": "/assets/Biltong-Monday-Promo-01.jpg",
+      "title": "Delicious Dish",
+      "price": 10.99,
+      "validation": "Available" 
+    },
+    "posters": [
+      {
+        "id": 1,
+        "posterTitle": "Movie Poster 1",
+        "picture": "/assets/A4-Poster-pdf.webp", 
+        "link": "https://link_to_movie1.com"
+      },
+      {
+        "id": 2,
+        "posterTitle": "Movie Poster 2",
+        "picture": "/assets/INL-1.jpg", 
+        "link": "https://link_to_movie2.com" 
+      }
+    ]
+  }
+  

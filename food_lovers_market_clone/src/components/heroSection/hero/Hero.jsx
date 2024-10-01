@@ -33,12 +33,12 @@ const Hero = () => {
 
           <div className='hidden md:flex justify-center flex-grow'>
             <ul className='flex space-x-16 md:text-center'>
-              <li><a href="#" className='md:text-2xl font-bold roboto-regular sm:font-semibold text-[#00723f]'>SPECIALS</a></li>
-              <li><a href="#" className='md:text-2xl font-bold roboto-regular sm:font-semibold text-[#00723f]'>RECIPES</a></li>
-              <li><a href="#" className='md:text-2xl font-bold  sm:font-semibold text-[#00723f]'>EARTH LOVERS</a></li>
-              <li><a href="#" className='md:text-2xl font-bold  sm:font-semibold text-[#00723f]'>FRESH NEWS</a></li>
-              <li><a href="#" className='md:text-2xl font-bold  sm:font-semibold text-[#00723f]'>SUBSCRIBE</a></li>
-              <li><a href="#" className='md:text-2xl font-bold  sm:font-semibold text-[#00723f]'>CONTACT</a></li>
+              <li><a href="#" className='md:text-2xl font-bold font-roboto sm:font-semibold text-[#00723f]'>SPECIALS</a></li>
+              <li><a href="#" className='md:text-2xl font-bold font-roboto sm:font-semibold text-[#00723f]'>RECIPES</a></li>
+              <li><a href="#" className='md:text-2xl font-bold font-roboto sm:font-semibold text-[#00723f]'>EARTH LOVERS</a></li>
+              <li><a href="#" className='md:text-2xl font-bold font-roboto sm:font-semibold text-[#00723f]'>FRESH NEWS</a></li>
+              <li><a href="#" className='md:text-2xl font-bold font-roboto sm:font-semibold text-[#00723f]'>SUBSCRIBE</a></li>
+              <li><a href="#" className='md:text-2xl font-bold font-roboto sm:font-semibold text-[#00723f]'>CONTACT</a></li>
               <SearchSharpIcon 
                 style={{ fontSize: '2rem' }} 
                 className='text-[#00723f] md:block hidden md:mr-20 cursor-pointer'
@@ -49,7 +49,8 @@ const Hero = () => {
 
           <div className='md:hidden flex items-center'>
             <SearchSharpIcon 
-              style={{ fontSize: '2.5rem' }} 
+              sm:style={{fontSize:'1.7rem'}}
+              md:style={{ fontSize: '2.5rem' }} 
               className='text-[#00723f] md:block hidden md:mr-20 cursor-pointer'
               onClick={toggleSearch} 
             /> 
@@ -102,10 +103,10 @@ const Hero = () => {
       </div>
 
       <div className='sm:ml-2 flex md:ml-48 md:m-1'>
-        <p className='sm:ml-2 text-white ml-20 m-2 gap-4 md:text-xl '>
-          Viewing deals at <a className='underline font-semibold' href="#">Food Lover’s Market Lynnwood Lane</a>
+        <p className='sm:ml-2 text-white ml-20 m-2 gap-4 md:text-xl font-roboto'>
+          Viewing deals at <a className='underline font-semibold' href="#">  Food Lover’s Market Lynnwood Lane  </a>
           <span className='font-bold'>Open</span> | Closes at 19:00 
-          <a href="#" className='underline font-bold'>View deals at a different store</a>
+          <a href="#" className='underline font-bold'>  View deals at a different store  </a>
         </p> 
       </div>
     </section>
