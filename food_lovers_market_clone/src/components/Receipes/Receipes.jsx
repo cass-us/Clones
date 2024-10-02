@@ -1,6 +1,7 @@
 import { Slide } from 'react-slideshow-image';
 import 'react-slideshow-image/dist/styles.css';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import { Link } from 'react-router-dom';
 import rec from './data/reciepes.json';
 
 const Receipes = () => {
@@ -15,17 +16,16 @@ const Receipes = () => {
         </h1>
         <p className="md:flex items-center text-[#00723f]">
           <ArrowForwardIosIcon className="mr-2" />
-          <a href="#" className="hover:underline">View All</a>
+          <Link to="/AllRecieps" className="hover:underline">View All</Link>
         </p>
       </div>
       <div>
-        <Slide arrows={false} duration={5000} 
-              autoplay={true}>
-          {recipes.map((recipe, index) => (
+        <Slide arrows={false} duration={5000} autoplay={true}>
+          {recipes.map((recipe) => (
             <div
-              key={index}
+              key={recipe.id} 
               style={{
-                backgroundImage: `url(/assets/${recipe.image})`, 
+                backgroundImage: `url(/assets/${recipe.image})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 height: '60vh',
@@ -46,9 +46,10 @@ const Receipes = () => {
                   <div>
                     <h2 className='text-black text-xl font-roboto font-bold text-center'>{recipe.title}</h2>
                   </div>
-                  <div className='bg-[#00723f] rounded-xl p-1'>
-                    <ArrowForwardIosIcon size={8}/>
-                  </div>
+                  {/* Link to individual recipe detail page */}
+                  <Link to={`/receipes/${recipe.id}`} className='bg-[#00723f] rounded-xl p-1'>
+                    <ArrowForwardIosIcon size={8} />
+                  </Link>
                 </div>
               </div>
             </div>
