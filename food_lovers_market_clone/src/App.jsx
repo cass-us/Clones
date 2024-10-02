@@ -9,7 +9,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Home route with multiple components */}
+      
         <Route path="/" element={
           <>
             <Hero />
@@ -18,10 +18,10 @@ export default function App() {
           </>
         } />
 
-        {/* Individual routes */}
+       
         <Route path="/main" element={<MainSection />} />
         <Route path="/receipes" element={<Receipes />} />
-        <Route path="/receipes/:id" element={<Recipe />} /> {/* Dynamic route for recipe details */}
+        <Route path="/receipes/:id" element={<Recipe />} /> 
         <Route path="/nav-background" element={<NavBackgroundImage />} />
       </Routes>
     </Router>
