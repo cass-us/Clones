@@ -1,0 +1,55 @@
+{
+    "videos": [
+      {
+        "id": 1,
+        "location": "/assets/video_dashinit.mp4",
+        "description": "This vibrant dish is a delicious explosion of flavour and health. Lean ostrich meat, fresh seasonal veggies, and a tangy garlic-lemon-sour cream dressing come together for a perfectly balanced meal. ⁠Ostrich is a superstar protein, low in fat and packed with nutrients. Add in the fibre-rich goodness of beans, and you've got a recipe for the whole living success! ✨ ⁠Find ostrich steak and goulash (under our YouFirst label) at Food Lover's Market! ⁠Head over to our website for the full recipe. ➡️ ⁠#ExperienceWholesomeLiving #Bowl #OstrichPower #FoodLoversMarket"
+      },
+      {
+        "id": 2,
+        "location": "/assets/video_dashinit2.mp4",
+        "description": "A delicious smoothie bowl packed with antioxidants and vitamins. Fresh berries, bananas, and chia seeds make this the perfect breakfast for a healthy start to your day. Find all ingredients at Food Lover's Market!⁠ #SmoothieBowl #HealthInABowl #FoodLoversMarket"
+      },
+      {
+        "id": 3,
+        "location": "/assets/video_dashinit3.mp4",
+        "description": "Craving a quick, nutritious snack? Try this combo of nuts, seeds, and dried fruits, available at Food Lover’s Market. Packed with energy and essential nutrients to keep you going throughout the day.⁠ #HealthySnacks #OnTheGo #FoodLoversMarket"
+      },
+      {
+        "id": 4,
+        "location": "/assets/video_dashinit4.mp4",
+        "description": "Refreshing and vibrant! This tropical fruit salad brings together the sweetness of mangoes, pineapples, and papayas. Perfect for a summer treat. Get your fresh produce at Food Lover's Market. ⁠#TropicalFruitSalad #FreshAndHealthy #FoodLoversMarket"
+      },
+      {
+        "id": 5,
+        "location": "/assets/video_dashinit5.mp4",
+        "description": "Grilled veggies seasoned with olive oil and herbs are a great addition to any meal. Easy to make and bursting with flavor! Visit Food Lover's Market for the freshest produce.⁠ #GrilledVeggies #HealthyEating #FoodLoversMarket"
+      },
+      {
+        "id": 6,
+        "location": "/assets/video_dashinit6.mp4",
+        "description": "Try these no-bake energy balls packed with oats, peanut butter, and a dash of honey. The perfect snack to keep your energy levels up throughout the day. Find all the ingredients at Food Lover’s Market.⁠ #EnergyBalls #HealthySnacks #FoodLoversMarket"
+      },
+      {
+        "id": 7,
+        "location": "/assets/video_dashinit7.mp4",
+        "description": "A light and fresh pasta salad made with cherry tomatoes, basil, and mozzarella cheese. Great for a summer picnic or a quick lunch. ⁠All ingredients are available at Food Lover's Market. ⁠#PastaSalad #FreshIngredients #FoodLoversMarket"
+      },
+      {
+        "id": 8,
+        "location": "/assets/video_dashinit8.mp4",
+        "description": "Fuel your body with this protein-packed quinoa bowl. Topped with avocado, black beans, and a squeeze of lime, it’s both delicious and nutritious. ⁠Find all these superfoods at Food Lover's Market. ⁠#QuinoaBowl #Superfoods #FoodLoversMarket"
+      },
+      {
+        "id": 9,
+        "location": "/assets/video_dashinit9.mp4",
+        "description": "Cool down with this refreshing summer smoothie! Blended with fresh watermelon, mint, and lime for the ultimate summer treat.⁠ Get the freshest fruits at Food Lover's Market. ⁠#SummerSmoothie #RefreshingDrinks #FoodLoversMarket"
+      },
+      {
+        "id": 10,
+        "location": "/assets/video_dashinit10.mp4",
+        "description": "This vegan burger is bursting with flavor! Made with a black bean patty, avocado, and a zesty vegan mayo. Perfect for plant-based eating. ⁠Find all the ingredients at Food Lover's Market. ⁠#VeganBurger #PlantBased #FoodLoversMarket"
+      }
+    ]
+  }
+  

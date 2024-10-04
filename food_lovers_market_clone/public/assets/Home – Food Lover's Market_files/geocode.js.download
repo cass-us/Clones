@@ -1,0 +1,152 @@
+// geocode.js
+
+function initializeAutocomplete() {
+    var input = document.getElementById('geocodeaddress');
+
+    var autocomplete = new google.maps.places.Autocomplete(input, {
+        componentRestrictions: { country: ['ZA', 'NA','ZW'] } // ZA is the country code for South Africa, NA for Namibia
+    });
+}
+
+function geocodeAddress() {
+    var addressInput = document.getElementById('geocodeaddress');
+    var address = addressInput.value;
+
+    var geocoder = new google.maps.Geocoder();
+
+    geocoder.geocode({ 'address': address }, function (results, status) {
+        if (status === 'OK' && results[0]) {
+            var location = results[0].geometry.location;
+            var latitude = location.lat();
+            var longitude = location.lng();
+
+            // Display the coordinates
+            var coordinatesDiv = document.getElementById('coordinates');
+            coordinatesDiv.innerHTML = '<span id="latitude">' + latitude + '</span><span id="longitude">' + longitude + '</span>';
+            orderItemsByDistance(latitude,longitude);
+        } else {
+            alert('Geocoding failed. Please enter a valid address.');
+        }
+    });
+}
+
+// Calculate distances etc 
+
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    // Haversine formula to calculate distance between two sets of coordinates
+    var R = 6371; // Radius of the Earth in kilometers
+    var dLat = (lat2 - lat1) * (Math.PI / 180);
+    var dLon = (lon2 - lon1) * (Math.PI / 180);
+    var a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var distance = R * c; // Distance in kilometers
+    return distance;
+}
+
+function orderItemsByDistance(latitudeInput,longitudeInput) {
+
+
+    var form = document.getElementById('geocodingForm');
+
+    if (!form || !latitudeInput || !longitudeInput) {
+        console.error('Form or input fields not found');
+        return;
+    }
+
+    // Get the latitude and longitude values from the form inputs
+    var targetLatitude = parseFloat(latitudeInput);
+    var targetLongitude = parseFloat(longitudeInput);
+
+    if (isNaN(targetLatitude) || isNaN(targetLongitude)) {
+        console.error('Invalid latitude or longitude values');
+        return;
+    }
+
+    // Get all items with the class 'flm_store_listing'
+    var storeListings = document.querySelectorAll('.flm_store_listing');
+
+    if (storeListings.length === 0) {
+        console.error('No items found with class "flm_store_listing"');
+        return;
+    }
+
+    // Calculate distances for each item and store the result in an array
+    var distances = [];
+
+    storeListings.forEach(function (listing, index) {
+        var itemLatitude = parseFloat(listing.getAttribute('data-lat'));
+        var itemLongitude = parseFloat(listing.getAttribute('data-long'));
+        var itemID = listing.id;
+
+
+        if (!isNaN(itemLatitude) && !isNaN(itemLongitude)) {
+            var distance = calculateDistance(targetLatitude, targetLongitude, itemLatitude, itemLongitude);
+            distances.push({ index: index + 1, id:itemID, distance: distance });
+        }
+    });
+
+
+    // Sort distances array by distance in ascending order
+    distances.sort(function (a, b) {
+        return a.distance - b.distance;
+    });
+
+// Apply the order and update the distance text for each item based on their ID
+var storeLocatorList = document.getElementById('flm_store_locator_list');
+if (storeLocatorList) {
+    distances.forEach(function (distanceInfo, arrayIndex) {
+        var itemId = distanceInfo.id;
+        var distance = distanceInfo.distance.toFixed(2); // Rounding distance to 2 decimal places
+
+        var item = document.getElementById(itemId);
+
+        if (item) {
+            // Remove all existing 'light_item' and 'dark_item' classes
+            item.classList.remove('light_item', 'dark_item');
+
+            item.style.order = arrayIndex; // Use array index directly
+
+            // Update the text within the 'flm_store_distance' element
+            var distanceElement = item.querySelector('.flm_store_distance');
+            if (distanceElement) {
+                distanceElement.textContent = distance + ' km away';
+            }
+
+            // Assign 'dark_item' or 'light_item' class based on the array index
+            item.classList.add(arrayIndex % 2 === 0 ? 'light_item' : 'dark_item');
+        }
+    });
+    $('#flm_store_locator_list').prependTo($('#parent_container'));
+
+} else {
+    console.error('Store locator list not found');
+}
+
+
+
+
+}
+
+/// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Call the initializeAutocomplete function when the page is loaded
+    initializeAutocomplete();
+
+    // Attach submit event to the 'geocodingForm' form
+    var geocodingForm = document.getElementById('geocodingForm');
+    geocodingForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent the default form submission
+
+        // Call the geocodeAddress function when the form is submitted
+        geocodeAddress();
+    });
+
+
+
+});
+
+

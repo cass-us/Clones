@@ -1,0 +1,1124 @@
+jQuery(document).ready(function ($) {
+
+    var jsonData = '';
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                    STORE LOCATOR FUNCTIONALITY 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Attach the function to the 'click' event of the element with class 'change_store_link'
+    $(document).on('click', '.change_store_link', function (e) {
+        e.preventDefault();
+        const flm_store_locator_list = $('#flm_store_locator_list');
+        const output = buildOutput();
+        store_locator_popup_container.fadeIn(100, function () {
+            flm_store_locator_list.html(output);
+            $('body').addClass('popup_open');
+        });
+    });
+
+    $(document).on('click', '#flm_close_store_locator_popup', function (e) {
+        e.preventDefault();
+        // Clear the input field with id 'geocodeaddress'
+        $('#geocodeaddress').val('');
+        // Remove 'light_item' and 'dark_item' classes from store locator items
+        $('.flm_store_listing').removeClass('light_item dark_item');
+        store_locator_popup_container.fadeOut(100, function () {
+            $('body').removeClass('popup_open');
+        });
+    });
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                    SET TIMER COOKIE                                              //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // SET INITIAL COOKIE FOR TIME LIMIT ONCE USER HAS LOGGED IN, IF EXPIRED, THEN CLEAR SESSION COOKIES.
+    const hasTimerCookie = Cookies.get('flm_timer');
+
+    if (!hasTimerCookie) {
+        // Clear Session Cookies 
+        removeFlmSessionData();  // Call the function to remove 'flm' session data
+        const timelimit = new Date(new Date().getTime() + 30 * 60 * 1000);
+        Cookies.set('flm_timer', true, {
+            expires: timelimit
+        });
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                              GEOLOCATION                                        //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Check if Store Data is set 
+    const user_store_data = sessionStorage.getItem('user_store_data');
+
+    // If not, then run geolocation 
+    if (!user_store_data) {
+        if (navigator.geolocation) { // Then try geo location
+            navigator.geolocation.getCurrentPosition(geolocationSuccess, geolocationError); // Get the user's location
+        } else {
+            // If Geolocation doesnt work
+            Cookies.remove('flm_timer'); // Remove cookie so it can reset for next time
+            alert("Geolocation did not work and we cannot find your closest store. Please refresh this page and try again.");
+        }
+
+    } else {
+        buildStoreSelectorModule();
+    }
+
+
+    ////// SUCCESSSFUL GEOLOCATION ////
+    function geolocationSuccess(position) {
+        // Extract latitude and longitude
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        processGeoLocation_StoreData(latitude, longitude, function (response) {
+
+            // Check if 'user_store_data' already exists in sessionStorage
+            if (!sessionStorage.getItem('user_store_data')) {
+                // If it doesn't exist, set the value
+                sessionStorage.setItem('user_store_data', response);
+            }
+
+            buildStoreSelectorModule(); // Build the Closest/ Selected Store Section at the top of the page
+        });
+    }
+
+    ////// ERROR IN GEOLOCATION ////
+    function geolocationError() {
+        const selectedStoreCookie = Cookies.get('selected_store');
+        Cookies.remove('flm_timer'); // Remove cookie 
+
+        processGeoLocation_StoreData(false, false, function (response) {
+
+            // Check if 'user_store_data' already exists in sessionStorage
+            if (!sessionStorage.getItem('user_store_data')) {
+                // If it doesn't exist, set the value
+                sessionStorage.setItem('user_store_data', response);
+            }
+
+            if (!selectedStoreCookie) {
+                buildStoreSelectorModule_No_Geolocation_No_Selected_Store(); // Build the Closest / Selected Store Section at the top of the page if not geolocation and no selected store set
+            } else {
+                buildStoreSelectorModule();// Build the Closest / Selected Store Section at the top of the page if not geolocation and there is a selected store set
+            }
+        });
+    }
+
+    /////////////////////////////////////////////////////////////////////
+    //                 AJAX FUNCTIONS FOR ABOVE                       //
+    /////////////////////////////////////////////////////////////////////
+
+    ////// GET STORE DATA BASED ON LATITUDE AND LONGITUDE VIA AJAX ///// 
+    function processGeoLocation_StoreData(latitude, longitude, callback) {
+        // Perform an AJAX request
+        $.ajax({
+            url: storedata_ajax_object.ajax_url, // Use the URL defined via wp_localize_script
+            type: 'POST',
+            data: {
+                action: 'process_store_data', // Action name for your AJAX function
+                flm_user_latitude: latitude,
+                flm_user_longitude: longitude,
+            },
+            success: function (data) {
+                callback(data);
+            },
+            error: function (error) {
+                console.error('Error:', error);
+            }
+        });
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    // CONSOLIDATED FUNCTION THAT BUILDS THE STORE SELECTION BLOCK - CATERS FOR CLOSEST / SELECTED STORE //
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function buildStoreSelectorModule() { // If has selected / closest store data
+        const store_data = sessionStorage.getItem('user_store_data'); // Get store session data 
+        const store_cta_block = $('#store_selector_cta');
+        store_cta_block.empty(); //Empty it to start fresh 
+
+        if (store_data) {
+            const flm_closest_store_data = sessionStorage.getItem('flm_closest_store');
+            const flm_selected_store_cookie = Cookies.get('selected_store');
+
+            // Build Selected Store Data 
+            if (flm_selected_store_cookie) {
+                // Update the latest data for your selected store 
+                const selectedStoreID = parseInt(flm_selected_store_cookie);
+                if (!isNaN(selectedStoreID)) {
+                    const jsonObject = JSON.parse(store_data);
+                    // Find the object with a matching 'id' value
+                    const selectedStore = jsonObject.find(store => store.id === selectedStoreID);
+
+                    if (selectedStore) {
+                        const selected_store_string = JSON.stringify(selectedStore);
+                        sessionStorage.setItem('selected_store', selected_store_string);
+                        Cookies.set('selected_store_data', selected_store_string, { expires: 30 });
+                        // Build output 
+                        const storeObject = JSON.parse(selected_store_string);
+                        const title = storeObject['title'];
+                        const distance = storeObject['distance'];
+                        const permalink = storeObject['permalink'];
+                        const store_state = storeObject['store_state'];
+                        const operating_state = storeObject['store_operating_state'];
+                        const region = storeObject['region'];
+
+                        let output = '<div class="cta_inner"><span>Viewing deals at <a href="' + permalink + '">' + title + '</a></span> ';
+                        if (distance) {
+                            // output += '(' + distance + ').</span> ';
+                        }
+                        if (operating_state == 'Open' || operating_state == null) {
+                            output += '<span>' + store_state + '</span> ';
+                        } else {
+                            output += '<span>' + operating_state + '</span> ';
+                        }
+                        output += '<span class="change_store_link_block"><a href="#" class="change_store_link" id="change_store">View deals at a different store</a></span></div> ';
+                        store_cta_block.html(output);
+                        checkandbuildSpecials();
+
+                        // UPDATE SUBSCRIPTUON FORM TOO 
+                        const store_selector_subscription_form_field = $('#input_1_54');
+                        const store_selector_subscription_form_region_field = $('#input_1_55');
+
+                        // Check if the element with ID '#input_1_54' exists
+                        if (store_selector_subscription_form_field.length) {
+                            store_selector_subscription_form_field.val(decodeHtmlEntities(title));
+                        }
+                        // Check if the element with ID '#input_1_55' exists
+                        if (store_selector_subscription_form_region_field.length) {
+                            store_selector_subscription_form_region_field.val(decodeHtmlEntities(region));
+                        }
+
+                        // UPDATE SUBSCRIPTUON FORM TOO 
+                        const store_page_subscription_form_field = $('#input_5_7');
+                        const store_page_subscription_form_region_field = $('#input_5_8');
+
+                        // Check if the element with ID '#input_1_54' exists
+                        if (store_page_subscription_form_field.length) {
+                            store_page_subscription_form_field.val(decodeHtmlEntities(title));
+                        }
+                        // Check if the element with ID '#input_1_55' exists
+                        if (store_page_subscription_form_region_field.length) {
+                            store_page_subscription_form_region_field.val(decodeHtmlEntities(region));
+                        }
+                    }
+                }
+                return; // If there is selected store data - output it to block and return - no need to carry on
+            }
+
+            // If no selected store - carry on with closest store 
+
+            // Build Closest Store Data 
+            if (!flm_closest_store_data) { // If there is closest store data
+                const jsonObject = JSON.parse(store_data);
+                const closest_store = jsonObject[0];
+                const closest_store_string = JSON.stringify(closest_store);
+                sessionStorage.setItem('flm_closest_store', closest_store_string); // Set Session
+                Cookies.set('flm_closest_store', closest_store_string, { expires: 30 }); // Set Cookie 
+
+                // Perform an AJAX request using jQuery's $.ajax method
+                $.ajax({
+                    url: storedata_ajax_object.ajax_url, // Use the URL defined via wp_localize_script
+                    type: 'POST',
+                    data: {
+                        action: 'populate_store_cta', // Action name for your AJAX function
+                        store_data: closest_store_string,
+                    },
+                    success: function (data) {
+                        store_cta_block.html(data);
+                        checkandbuildSpecials();
+
+                    },
+                    error: function (error) {
+                        console.error('Error:', error);
+                    }
+                });
+            } else { // If no session data set, but has flm_closest_store_data
+                const closest_store_string = flm_closest_store_data;
+                const storeObject = JSON.parse(closest_store_string);
+                const store_id = storeObject['id'];
+                const title = storeObject['title'];
+                const distance = storeObject['distance'];
+                const permalink = storeObject['permalink'];
+                const store_state = storeObject['store_state'];
+                const operating_state = storeObject['store_operating_state'];
+
+                //let output = '<div class="cta_inner"><span>Cannot locate your closest store</span> <span><a href="#" class="change_store_link" id="change_store">Select a favourite store to view deals</a></span>';
+               // let output = '<div class="cta_inner"><span>Closest store is <a href="' + permalink + '">' + title + '</a></span>';
+                let output='';
+
+                if (distance!='0') {
+                     output = '<div class="cta_inner"><span>Closest store is <a href="' + permalink + '">' + title + '</a></span>';
+                    if (distance) {
+                        output += '(' + distance + ')</span> ';
+                    }
+                    if (operating_state == 'Open' || operating_state == null) {
+                        output += '<span>' + store_state + '</span> ';
+                    } else {
+                        output += '<span>' + operating_state + '</span> ';
+                    }
+                    output += ' <span class="change_store_link_block"><a href="#" class="set_default_store" data-id="'+store_id+'">Set as favourite store to view deals</a> | <a href="#" class="change_store_link" id="change_store">View deals at a different store</a></span></div>';
+                } else {
+                    output = '<div class="cta_inner"><span>Cannot locate your closest store</span> ';
+                    output += '<span class="change_store_link_block"><a href="#" class="change_store_link" id="change_store">Select favourite store to view deals</a></span></div>';
+                }
+                store_cta_block.html(output);
+                checkandbuildSpecials();
+
+            }
+        } else { // Else cannot locate closest store 
+            let output = '<div class="cta_inner"><span>Cannot locate your closest store</span> ';
+            output += '<span class="change_store_link_block"><a href="#" class="change_store_link" id="change_store">Select favourite store to view deals</a></span></div>';
+            store_cta_block.html(output);
+        }
+        checkandbuildSpecials();
+    }
+
+    function buildStoreSelectorModule_No_Geolocation_No_Selected_Store() { // If no selected / closest store data
+        const store_cta_block = $('#store_selector_cta');
+        let output = '<div class="cta_inner"><span>Cannot locate your closest store</span> ';
+        output += '<span class="change_store_link_block"><a href="#" class="change_store_link" id="change_store">Select favourite store to view deals</a></span></div>';
+        store_cta_block.html(output);
+        checkandbuildSpecials();
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                       SETTING SELECTED STORE BUTTON                             //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    $(document).on('click', '.set_default_store', function (e) {     /////// Store Selection Button - setting favourite 
+        e.preventDefault();
+        const storeID = $(this).attr('data-id');
+        const container = $('#store_selection_block_' + storeID);
+        Cookies.set('selected_store', storeID, { expires: 30 });
+
+        // Apply fade-out effect to the container
+        container.fadeOut('fast', function () {
+            // Empty the container once the fade-out is complete
+            container.empty();
+
+            // Set new HTML content
+            container.html("<span class='flm_favourite_store_text'>Favourite store</span>");
+
+            // Apply fade-in effect to the container
+            container.fadeIn('fast');
+        });
+
+        // Update all other store_selection_blocks 
+        $('.store_selection_block').each(function () {
+            const otherStoreID = $(this).attr('data-id');
+
+            // Check if the data-id attribute matches the storeID
+            if (otherStoreID !== storeID) {
+                // Update inner HTML for non-matching elements
+                $(this).html("<a href='#' data-id='" + otherStoreID + "' class='set_default_store'>Set as favourite store to view deals</a>");
+
+            }
+        });
+        // Rewrite store selector 
+        buildStoreSelectorModule();
+    });
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                     REMOVE COOKIE FUNCTIONALITY                                  //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Function to remove session data with keys starting with 'flm'
+    function removeFlmSessionData() {
+        // Loop through all session storage items
+        for (let key in sessionStorage) {
+            // Check if the key starts with 'flm'
+            if (key.startsWith('flm')) {
+                // Remove the item from session storage
+                sessionStorage.removeItem(key);
+            }
+        }
+    }
+
+    /*** Remember that the selected store does not contain flm_ prefix as this needs to persist for a month */
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                CHANGE STORE LINK FUNCTIONALITY                                   //
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const store_locator_popup_container = $('#flm_store_locator_popup_container');
+    const store_locator_page = $('#store_locator_page');
+
+    if (store_locator_page) {
+        const output = buildOutput();
+        store_locator_page.html(output);
+    }
+
+// Define a function to build the output
+function buildOutput() {
+    const user_store_data = sessionStorage.getItem('user_store_data');
+
+    // Check if user_store_data is available and parse it
+    if (!user_store_data) {
+        console.warn("No store data found in sessionStorage.");
+        return '';  // Exit the function if no data is found
+    }
+
+    const storeArray = JSON.parse(user_store_data);
+
+    // Check if the parsed storeArray is valid and is an array
+    if (!Array.isArray(storeArray)) {
+        console.error("Invalid store data format.");
+        return '';  // Exit the function if storeArray is not an array
+    }
+
+    const defaultStore = parseInt(Cookies.get('selected_store'));
+    let output = '';
+
+    // Loop through the array and output values of specific keys in each object
+    for (let i = 0; i < storeArray.length; i++) {
+        const store = storeArray[i];
+        const title = store.title;
+        const address = store.address;
+        const distance = store.distance ? store.distance + ' from you' : '';
+        const permalink = store.permalink;
+        const store_state = store.store_state;
+        const operating_state = store.store_operating_state || '';
+        const store_type = store.store_type;
+        const id = parseInt(store.id);
+        const lat = store.latitude;
+        const long = store.longitude;
+
+        // Only add stores that are not permanently closed
+        if (operating_state !== 'Permanently Closed') {
+            output += `<div class='flm_store_listing visible' data-lat='${lat}' data-long='${long}' data-id='${id}' id='flm_store_listing_${id}'>\
+                <div class='flm_store_column first-col'>\
+                    <h5 class='flm_store_title'>${title}`;
+            if (operating_state !== 'Open') {
+                output += ` - ${operating_state}`;
+            }
+            output += `</h5><span class='flm_store_address'>${address}</span>\
+                    <span class='flm_store_distance'>${distance}</span>`;
+
+            if (operating_state === 'Open') {
+                output += `<span class='flm_store_status'>${store_state || operating_state}</span>`;
+            }
+
+            output += `</div>\
+                <div class='flm_store_column second-col'>\
+                    <a href='${permalink}'>Visit store page</a>`;
+
+            if (defaultStore !== id && store_type !== 'Eatery' && (operating_state === 'Open' || operating_state === 'Coming Soon')) {
+                output += `<div class='store_selection_block' data-id='${id}' id='store_selection_block_${id}'>\
+                            <a href='#' data-id='${id}' class='set_default_store'>Set as favourite store to view deals</a>\
+                        </div>`;
+            }
+
+            output += `</div>\
+            </div>`;
+        }
+    }
+    return output;
+}
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                   END OF STORE LOCATOR FUNCTIONALITY   
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                               SPECIALS     
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    function checkandbuildSpecials() {
+        // Check if session variable 'specials_data' exists
+        let sessionSpecialsData = sessionStorage.getItem('specials_data');
+
+        if (sessionSpecialsData) {
+            // Set value of 'specials_data' input field from session variable
+            $('#specials_data').val(sessionSpecialsData);
+            // Build specials if data is available
+            buildSpecials();
+        } else {
+            // Call AJAX function if session variable does not exist
+            getSpecialsData();
+        }
+    }
+
+
+
+    // AJAX 
+    function getSpecialsData() {
+
+
+        // Perform an AJAX request
+        $.ajax({
+            url: specialdata_ajax_object.ajax_url, // Use the URL defined via wp_localize_script
+            type: 'POST',
+            data: {
+                action: 'get_specials', // Action name for your AJAX function
+            },
+            success: function (data) {
+                // Set value of 'specials_data' input field to returned value
+                $('#specials_data').val(data);
+                sessionStorage.setItem('specials_data', data);
+                buildSpecials();
+            },
+            error: function (error) {
+                console.error('Error:', error);
+            }
+        });
+    }
+
+
+
+    // BUILD SPECIALS
+    function buildSpecials() {
+
+        // The JSON-encoded and HTML-encoded string you provided
+
+        const jsonString = $('#specials_data').val(); // get data from the hidden input
+
+        // Decode HTML entities to get the actual JSON string
+        const decodedJsonString = jsonString.replace(/&quot;/g, '"');
+
+        // Parse the JSON string into a JavaScript object
+        jsonData = JSON.parse(decodedJsonString);
+
+        // Call the Output function
+        specialsOutput(jsonData);
+    }
+
+
+
+
+    ///////////////////////////////////////////////////////////
+
+    // Specials Output Function
+    function specialsOutput(jsonData) {
+
+        // START OF LOOP 
+        const allSpecialsBoxes = $('.specials_box'); // Select all elements with class 'specials_box'
+
+        allSpecialsBoxes.each(function () {
+            let specials_box_item = $(this);
+            let specials_box_item_id_att = specials_box_item.attr("data-id");
+            const specials_message = specials_box_item.attr('data-message');
+            let select_category = specials_box_item.attr('data-category');
+            let select_country = specials_box_item.attr('data-country');
+            let location = specials_box_item.attr('data-location');
+
+            if (location == 'NA') {
+                location = 'NAM';
+            } else if (location == 'ZW') {
+                location = 'ZIM';
+            } else {
+                location = 'ZA'; // Default to ZA
+            }
+
+            var store_page_id = specials_box_item.attr('data-store');
+            let closest_store = sessionStorage.getItem('flm_closest_store');
+            let selected_store = Cookies.get('selected_store_data');
+
+
+            if (store_page_id) { // If on store page - get selected store
+                const all_store_data = JSON.parse(sessionStorage.getItem('user_store_data'));
+                var resultObject = getObjectById(all_store_data, parseInt(store_page_id));
+                selected_store = JSON.stringify(resultObject);
+            }
+
+            specials_box_item.empty();
+
+            var output = `<div class="flm_specials_block_header" id="flm_specials_block_header_${specials_box_item_id_att}">`;
+            if (specials_message) {
+                output += '<h2>' + specials_message + '</h2>';
+            }
+
+            if (selected_store) { // If has selected store - default to this
+
+                var selected_store_object = JSON.parse(selected_store);
+                var store_country = selected_store_object.country;
+                var store_region = selected_store_object.region;
+                var store_id = selected_store_object.id;
+                var store_title = selected_store_object.title;
+
+                if (store_page_id && !select_country) {
+                    output += '<h4 class="">Viewing deals at ' + store_title + ' </h4></div>';
+                } else if (!store_page_id && !select_country) {
+                    output += '<span class="specials_message"><span>Viewing deals at ' + store_title + '</span> <a href="#" class="change_store_link">View deals at a different store</a></span></div>';
+                }
+
+                if (select_country) {
+                    if (select_country == 'NAM') {
+                        country_name = 'Namibia';
+                    } else if (select_country == 'ZIM') {
+                        country_name = 'Zimbabwe';
+                    } else {
+                        country_name = 'South Africa';
+                    }
+                    output += '<span class="specials_message"><span>Specials available in ' + country_name + '</span> <a href="#" class="change_store_link">View deals at a different store</a></span></div>';
+                }
+
+            } else if (closest_store) { // if no selected store - default to closest store
+
+                var closest_store_object = JSON.parse(closest_store);
+                var closest_store_id = closest_store_object.id;
+                selected_store = parseInt(closest_store_id);
+                var store_country = closest_store_object.country;
+                var store_region = closest_store_object.region;
+                var store_title = closest_store_object.title;
+                var distace = closest_store_object.distance;
+                
+                if(distace !='0'){
+                    output += '<span class="specials_message"><span>Viewing deals at ' + store_title + '</span> <a href="#" class="set_default_store" data-id="'+closest_store_id+'">Set as favourite store to view deals</a>  | <a href="#" class="change_store_link">View deals at a different store</a></span></div>';
+                } else if (select_country) {
+                    if (select_country == 'NAM') {
+                        country_name = 'Namibia';
+                    } else if (select_country == 'ZIM') {
+                        country_name = 'Zimbabwe';
+                    } else {
+                        country_name = 'South Africa';
+                    }
+                    output += '<span class="specials_message"><span>Specials available in ' + country_name + '</span> <a href="#" class="change_store_link">Select a favourite store to view deals</a></span></div>';
+                } else {
+                    if (location == 'NAM') {
+                        country_name = 'Namibia';
+                    } else if (location == 'ZIM') {
+                        country_name = 'Zimbabwe';
+                    } else if (location == 'ZA') {
+                        country_name = 'South Africa';
+                    } else {
+                        country_name = 'South Africa';
+                    }
+                    output += '<span class="specials_message"><span>Specials available in ' + country_name + '</span> <a href="#" class="change_store_link">Select a favourite store to view deals</a></span></div>';
+                }
+
+            } else { // if no selected or closest store - default to country
+                if (select_country) {
+                    if (select_country == 'NAM') {
+                        country_name = 'Namibia';
+                    } else if (select_country == 'ZIM') {
+                        country_name = 'Zimbabwe';
+                    } else {
+                        country_name = 'South Africa';
+                    }
+                    output += '<span class="specials_message"><span>Specials available in ' + country_name + '</span> <a href="#" class="change_store_link">Select a favourite store to view deals</a></span></div>';
+                } else {
+                    if (location == 'NAM') {
+                        country_name = 'Namibia';
+                    } else if (location == 'ZIM') {
+                        country_name = 'Zimbabwe';
+                    } else if (location == 'ZA') {
+                        country_name = 'South Africa';
+                    } else {
+                        country_name = 'South Africa';
+                    }
+                    output += '<span class="specials_message"><span>Specials available in ' + country_name + '</span> <a href="#" class="change_store_link">Select a favourite store to view deals</a></span></div>';
+                }
+            }
+
+            // Check if there are any results
+            if (jsonData.length > 0) {
+                let negscore = 0;
+                output += `<div class="flm_specials_block_wrapper" id="flm_specials_block_wrapper_${specials_box_item_id_att}">`;
+                output += `<div class="flm_specials_block snap" id="flm_specials_block_${specials_box_item_id_att}">`;
+
+                jsonData.forEach(function (special) {
+
+                    // Check Date
+                    const currentDate = new Date();
+                    const publishStart = new Date(special.publish_start_date);
+                    const publishEnd = new Date(special.publish_end_date);
+
+                    // Compare the current date with the target date
+                    if (currentDate < publishStart || currentDate > publishEnd) {
+                        negscore++
+                        return;
+                    }
+
+                    //Check Cateogry 
+                    if (select_category && select_category != special.category) {
+                        negscore++
+                        return;
+                    }
+
+                    // Check Scope 
+                    const scope = special.scope;
+
+                    if (selected_store && !select_country) {
+
+                        // National 
+                        if (scope == 'National') {
+                            const country = special.country;
+                            if ((country && country !== store_country)) {
+                                negscore++
+                                return;
+                            }
+                        }
+
+                        // Regional
+                        if (scope == 'Regional') {
+                            const regions = special.regions;
+                            // Check if store_region is included in the array regions
+                            if (regions && !regions.includes(store_region)) {
+                                negscore++
+                                return;
+                            }
+                        }
+
+                        // Store
+                        if (scope == 'Store') {
+                            const stores = special.stores;
+                            // Check if store_id is included in the array regions
+                            if (stores && !stores.includes(store_id)) {
+                                negscore++
+                                return;
+                            }
+                        }
+
+                        // Excluded stores 
+                        const exclude_stores = special.exclude_stores;
+                        // Check if store_id is included in the excluded stores
+                        if (exclude_stores && exclude_stores.includes(store_id)) {
+                            negscore++
+                            return;
+                        }
+
+                    } else { // No store selected
+
+                        // National 
+                        var stores = special.stores;
+                        var country = special.country;
+
+                        if (select_country) {
+                            if (select_country && country !== select_country) {
+                                negscore++
+                                return;
+                            }
+                        } else {
+                            if ((country && country !== location) || (stores)) {
+                                negscore++
+                                return;
+                            }
+                        }
+                    }
+
+                    // Types
+                    const type = special.type;
+
+                    // Category
+                    const category = special.category;
+
+                    // small print 
+                    let small_print = special.small_print;
+
+                    // First check if data-driven special:
+                    if (type == 'Data') {
+                        const currency = special.currency;
+                        const price = formatPrice(special.price, currency);
+                        const description = special.description;
+                        const units = special.units;
+                        const swap = special.swap || false;
+                        const src = special.image;
+
+                        const price_tag = (swap) ?
+                            '<span class="units"><span>' + units + '</span></span><span class="price">' + price + '</span>' :
+                            '<span class="price">' + price + '</span><span class="units"><span>' + units + '</span></span>';
+
+                        output += `
+                        <div class="flm_special data" data-category="${category}">
+                           
+                            <div class='data_image'>
+                                <img class="image" src="${src}" />
+                            </div>
+                            
+                            <div class="data_content">
+
+                                <div class="special_description">
+                                    ${description}
+                                </div>
+
+                                <div class="pricetag">
+                                    ${price_tag}
+                                </div>
+
+                                <div class="smallprint">
+                                    ${small_print}
+                                </div>
+                            </div>
+
+                        </div>`;
+                    }
+                    // Check if type is 'Flipping Book'
+                    if(type == 'Flipping Book' ){
+                        let flip_id = special.flipping_book_link;
+                        const title = (special.title) ? special.title : 'Click image to view';
+
+                        output += `
+                        <div class="flm_special ${type}" data-category="${category}">
+                             <a href="https://promotions.foodloversmarket.co.za/view/${flip_id}/" class="fbo-embed" data-fbo-id="${flip_id}" data-fbo-lightbox="yes" data-fbo-width="100%" data-fbo-height="auto" data-fbo-version="1" ></a>
+
+                            <div class="data_content">
+                            <div class="special_description">
+                                ${title}
+                            </div>
+                           <div>&nbsp;</div>
+                                <div class="smallprint">
+                                ${small_print}
+                                </div>
+                            </div>       
+                            <script async defer src="https://online.flippingbook.com/EmbedScriptUrl.aspx?m=redir&hid=${flip_id}"></script>                          
+                        </div>`;
+                    }
+
+
+                    // Else process image / pdf special
+                    if (type == 'Image' || type == 'PDF') {
+                        const target = special.target;
+                        const src = (type == 'Image') ? special.image : special.pdf_thumb;
+                        const title = (special.title) ? special.title : 'Click image to view';
+
+                        let link = special.link || src;
+
+                        
+
+                        if (target == 'lightbox') {
+                            output += `
+                            <div class="flm_special ${type}" data-category="${category}">
+                                <a class="data_image" href="${link}" data-src="${link}" data-type="${type}" data-fancybox="flm_specials">
+                                    <img src="${src}" />
+                                </a>
+                                <div class="data_content">
+                                <div class="special_description">
+                                    ${title}
+                                </div>
+                                <div class="clicktoview">                                    
+                                    <a href="${link}" target="${target}">
+                                    Click to view
+                                    </a>
+                                </div>
+                                    <div class="smallprint">
+                                    ${small_print}
+                                    </div>
+                                </div>                                 
+                            </div>`;
+                        } else {
+                            link = (type == 'PDF') ? special.pdf_url : link;
+                            output += `
+                            <div class="flm_special ${type}" data-category="${category}">
+                                    <a class="data_image" href="${link}" target="${target}">
+                                        <img src="${src}" />
+                                    </a>
+                                <div class="data_content">
+                                <div class="special_description">
+                                    ${title}
+                                </div>
+                                <div class="clicktoview">                                    
+                                    <a href="${link}" target="${target}">
+                                    Click to view
+                                    </a>
+                                </div>
+                                    <div class="smallprint">
+                                    ${small_print}
+                                    </div>
+                                </div>
+                            </div>`;
+                        }
+                    }
+                });
+
+                output += '</div>';
+                output += `<div class="flm_special_arrow previous" data-id='${specials_box_item_id_att}' id="previous_${specials_box_item_id_att}"><div class="flm_special_arrow_wrapper"><span><i class="fa-sharp fa-solid fa-chevron-left"></i></span></div></div>`;
+                output += `<div class="flm_special_arrow next" data-id='${specials_box_item_id_att}' id="next_${specials_box_item_id_att}"><div class="flm_special_arrow_wrapper"><span><i class="fa-sharp fa-solid fa-chevron-right"></i></span></div></div>`;
+                output += '</div>';
+
+                if (negscore == jsonData.length) {
+                    output = '<div class="flm_specials_no_specials"><div>No current specials at your selected store</div></div>';
+                    specials_box_item.html(output).hide().fadeIn(function () {
+
+                    });
+                } else {
+                    specials_box_item.html(output).hide().fadeIn(function () {
+                        processSpecialsBlock(specials_box_item_id_att);
+                        updateSpecialsBlockClass(specials_box_item_id_att);
+                    });
+                }
+
+            } else {
+                output = '<div class="flm_specials_no_specials"><div>No current specials at your selected store</div></div>';
+                specials_box_item.html(output).hide().fadeIn(function () {
+
+                });
+            }
+        });
+        /// END OF LOOP
+    }
+
+
+
+    function processSpecialsBlock(id_att) {
+        // TO SHOW OR HIDE ARROWS ON MOBILE SCREENS (<768px)
+        const flmSpecialsBlock = $('#flm_specials_block_' + id_att + '.flm_specials_block');
+
+        // Check if Specials Block Exists
+        if (flmSpecialsBlock.length) { // Check the length property to determine existence
+
+            let previousButton = $('#previous_' + id_att);
+            let nextButton = $('#next_' + id_att);
+
+            flmSpecialsBlock.on('scroll', function () {
+                // Check if the screen width is less than 768px
+                if (window.innerWidth > 768) {
+                    // Check if the scroll position is greater than 0
+                    if (flmSpecialsBlock.scrollLeft > 0) {
+                        // If yes, show the previous button
+                        previousButton.show();
+                    } else {
+                        // If no, hide the previous button
+                        previousButton.hide(); // Use .hide() here instead of setting display directly
+                    }
+
+                    // Check if the scroll is at the end
+                    if (flmSpecialsBlock.scrollLeft + flmSpecialsBlock.innerWidth() >= flmSpecialsBlock.prop('scrollWidth') - 1) {
+                        // If yes, hide the next button
+                        nextButton.hide(); // Use .hide() here instead of setting display directly
+                    } else {
+                        // If no, show the next button
+                        nextButton.show();
+                    }
+                } else {
+                    previousButton.hide();
+                    nextButton.hide();
+                }
+            });
+
+            checkScrollable(id_att);
+
+            // Scroll to the left
+            flmSpecialsBlock.scrollLeft(0); // Use .scrollLeft() method
+
+            // Call it on resize too
+            window.addEventListener('resize', function () {
+                checkScrollable(id_att);
+            });
+
+        }
+
+
+    }
+
+    // Function to check if flmSpecialsBlock is scrollable and scroll to the left
+    function checkScrollable(id) {
+        let flmSpecialsBlock = $('#flm_specials_block_' + id);
+        let flm_specials_block_wrapper = $('#flm_specials_block_wrapper_' + id);
+        let previousButton = $('#previous_' + id);
+        let nextButton = $('#next_' + id);
+
+        if (window.innerWidth > 768) {
+
+            // If scrollable, show the buttons
+            previousButton.hide();
+            nextButton.style.display = 'block';
+
+            if (flmSpecialsBlock.scrollWidth > flmSpecialsBlock.clientWidth) {
+                // Update style 
+                flm_specials_block_wrapper.addClass('adjusted_arrow_width');
+
+                // Add the scroll event listener to handle visibility dynamically
+                flmSpecialsBlock.addEventListener('scroll', function () {
+                    if (window.innerWidth > 768) {
+
+                        if (flmSpecialsBlock.scrollLeft > 0) {
+                            previousButton.show();
+                        } else {
+                            previousButton.hide();
+                        }
+
+                        if (flmSpecialsBlock.scrollLeft + flmSpecialsBlock.clientWidth >= flmSpecialsBlock.scrollWidth - 1) {
+                            nextButton.hide();
+                        } else {
+                            nextButton.show();
+                        }
+                    }
+                });
+
+            } else {
+                flm_specials_block_wrapper.removeClass('adjusted_arrow_width');
+                previousButton.hide();
+                nextButton.hide();
+            }
+        } else {
+            // If window width is not greater than 768, hide both buttons
+            previousButton.hide();
+            nextButton.hide();
+
+        }
+        //();
+
+    }
+
+    // Function to check if flmSpecialsBlock is scrollable and scroll to the left
+    function checkScrollable(id) {
+
+        let flmSpecialsBlock = $('#flm_specials_block_' + id);
+        let flm_specials_block_wrapper = $('#flm_specials_block_wrapper_' + id);
+
+        let previousButton = $('#previous_' + id);
+        let nextButton = $('#next_' + id);
+
+        if (window.innerWidth > 768) {
+            // If scrollable, show the buttons
+            previousButton.hide();
+            nextButton.show();
+
+            if (flmSpecialsBlock.get(0).scrollWidth > flmSpecialsBlock.get(0).clientWidth) {
+                // Update style 
+                flm_specials_block_wrapper.addClass('adjusted_arrow_width');
+
+                // Add the scroll event listener to handle visibility dynamically
+                flmSpecialsBlock.on('scroll', function () {
+                    if (window.innerWidth > 768) {
+
+                        if (flmSpecialsBlock.get(0).scrollLeft > 0) {
+                            previousButton.show();
+                        } else {
+                            previousButton.hide();
+                        }
+
+                        if (flmSpecialsBlock.get(0).scrollLeft + flmSpecialsBlock.get(0).clientWidth >= flmSpecialsBlock.get(0).scrollWidth - 1) {
+                            nextButton.hide();
+                        } else {
+                            nextButton.show();
+                        }
+                    }
+                });
+
+            } else {
+                flm_specials_block_wrapper.removeClass('adjusted_arrow_width');
+                previousButton.hide();
+                nextButton.hide();
+            }
+        } else {
+            // If window width is not greater than 768, hide both buttons
+            previousButton.hide();
+            nextButton.hide();
+        }
+    }
+
+
+
+// Format price
+function formatPrice(price, currency) {
+
+    // Ensure price is defined and is a string
+    if (typeof price !== 'string' || price.trim() === '') {
+        console.warn('Invalid price:', price);
+        return '' ; // Fallback for invalid price
+    }
+
+    // Split the string into an array based on the dot ('.') character
+    const parts = price.split('.');
+
+    // Check if there is a dot in the string
+    if (parts.length > 1) {
+        // Take the part to the right of the dot and wrap it in <span class='subset'> tags
+        const subset = '<span class="subset">' + parts[1] + '</span>';
+
+        // Concatenate the left part and the wrapped subset
+        var formattedPrice = '<span>' + currency + '' + parts[0] + '</span>' + subset;
+    } else {
+        // If there is no dot, use the original string
+        var formattedPrice = '<span>' + currency + '' + price + '</span>';
+    }
+
+    // Output the result
+    return formattedPrice;
+}
+
+
+
+    $(document).on('click', '.set_default_store', function (e) {
+        e.preventDefault();
+
+        const specials_boxes = $('.specials_box');
+
+        specials_boxes.each(function () {
+            const country = $(this).attr('data-country');
+            console.log(country);
+            $(this).attr('data-country', '');
+        });
+        specialsOutput(jsonData);
+
+    });
+
+
+
+    // Function to find an object based on key-value pair
+    function getObjectById(array, id) {
+        return array.find(obj => obj.id === id);
+    }
+
+    // Check if multiple or just single and update class accorcdingly
+    function updateSpecialsBlockClass(id) {
+        let flmSpecialsBlock = $('#flm_specials_block_' + id);
+        const flmSpecialElements = flmSpecialsBlock.find('.flm_special');
+        const count = flmSpecialElements.length;
+
+        if (count > 1) {
+            flmSpecialsBlock.addClass('multiple').removeClass('single');
+        } else {
+            flmSpecialsBlock.addClass('single').removeClass('multiple');
+        }
+
+    }
+
+
+
+    // CLICK EVENTS ON THE ARROWS 
+
+    $(document).on('click', '.next', function () {
+        const id_att = $(this).attr('data-id');
+        const container = $('#flm_specials_block_' + id_att);
+        const firstVisibleItem = container.find('.flm_special:first');
+        const scrollAmount = firstVisibleItem.outerWidth(true); // Including margin
+        container.removeClass('snap');
+        container.animate({
+            scrollLeft: '+=' + scrollAmount
+        }, 200, function () {
+            container.addClass('snap');
+
+        }); // You can adjust the duration as needed
+    });
+
+    $(document).on('click', '.previous', function () {
+        const id_att = $(this).attr('data-id');
+        const container = $('#flm_specials_block_' + id_att);
+        const lastVisibleItem = container.find('.flm_special:last');
+        const scrollAmount = lastVisibleItem.outerWidth(true); // Including margin
+        container.removeClass('snap');
+        container.animate({
+            scrollLeft: '-=' + scrollAmount
+        }, 200, function () {
+            container.addClass('snap');
+
+        }); // You can adjust the duration as needed
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                         END OF SPECIALS 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+});
+
+function decodeHtmlEntities(input) {
+    let tempElement = document.createElement('div');
+    tempElement.innerHTML = input;
+    return tempElement.textContent || tempElement.innerText;
+}
+
+

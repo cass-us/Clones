@@ -1,0 +1,36 @@
+jQuery(document).ready(function ($) {
+
+    $('#submitButton').click(function(event) {
+        // Prevent the default form submission
+        event.preventDefault();
+
+        // Call the validation function
+        if (validateForm()) {
+            // If validation is successful, submit the form
+            $('#subscriptionForm').submit();
+        }
+    });
+
+
+    function validateForm() {
+        var emailInput = $('#email');
+        var errorMessage = $('#errorMessage');
+
+        // Regular expression for basic email validation
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(emailInput.val())) {
+            errorMessage.text('Please enter a valid email address');
+            return false; // Validation failed
+        }
+
+        // Clear error message if email is valid
+        errorMessage.text('');
+
+        return true; // Validation successful
+    }
+
+
+});
+
+

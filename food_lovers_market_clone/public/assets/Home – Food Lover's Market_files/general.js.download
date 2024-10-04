@@ -1,0 +1,20 @@
+jQuery(document).ready(function ($) {
+
+    $(document).on('click', '.spacer-link', function(e) {
+          var $spacerLink = $(this);
+          var $parent = $spacerLink.parent();
+          var $nextLink = $parent.find('a').first(); // Finds the first 'a' element within the parent
+          
+          // Check if a link element is found
+          if ($nextLink.length) {
+            var linkUrl = $nextLink.attr('href');
+            e.preventDefault(); // Prevent the default click behavior
+            window.location.href = linkUrl; // Open the URL in the same window
+          }
+        });
+
+
+
+
+      });
+      
