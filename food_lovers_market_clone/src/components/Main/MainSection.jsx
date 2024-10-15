@@ -20,17 +20,17 @@ const MainSection = () => {
           </a>
         </h2>
       </div>
-      <section className="flex gap-4 p-2  *:mt-8">
+      <section className="flex gap-4 p-2 mt-8">
         <div className="w-[200px]">
           <img src={image} className="w-52 mb-4" />
           <h2 className="mb-8 font-roboto font-bold">
             Biltong Monday Promotion
           </h2>
-          <h2>
-            <span className="font-roboto font-bold text-[#00723f]">
-              {" "}
-              R199 99 per kg
-            </span>
+          <h2 className="relative text-[#da304a] font-bold text-lg">
+            <span className="font-roboto">R199 </span>
+            <span className="absolute top-[-0.5rem] text-xs">99</span>
+            per kg
+           
           </h2>
           <p className="text-sm">
             Valid from 30 Sep to 06 Oct 2024. Select SA stores only. We reserve
@@ -63,24 +63,22 @@ const MainSection = () => {
         </div>
       </section>
       <section className="md:flex h-[200px] w-[98%] bg-[#57325f] mt-20 mb-20 pb-8">
-      <div className="p-4 text-white font-roboto">
-      <h2 className="text-2xl pb-2"><span className="font bold">Hear it through the grapevine</span></h2>
-      
-      Sign up to our weekly newsletter to be informed of our freshest deals and mouthwatering recipes
-      </div>
-      <div className="flex gap-3 ml-4">
-        <div className="text-center justify-center item-center">
-         <input
-          type="text"
-          placeholder=" your email"
-          className="rounded-md w-[200px] h-10"
-        />
+        <div className="p-4 text-white font-roboto">
+          <h2 className="text-2xl pb-2"><span className="font bold">Hear it through the grapevine</span></h2>
+          Sign up to our weekly newsletter to be informed of our freshest deals and mouthwatering recipes
         </div>
-        <div className="text-black bg-white rounded-lg w-8 ">
-        <ArrowRightAltIcon size={20} className="p-1"/>
+        <div className="flex gap-3 ml-4">
+          <div className="text-center justify-center item-center">
+            <input
+              type="text"
+              placeholder=" your email"
+              className="rounded-md w-[200px] h-10"
+            />
+          </div>
+          <div className="text-black bg-white rounded-lg w-8">
+            <ArrowRightAltIcon size={20} className="p-1"/>
+          </div>
         </div>
-      </div>
-      
       </section>
     </section>
   );
